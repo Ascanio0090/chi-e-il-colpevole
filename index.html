@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+  <meta name="mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+  <meta name="theme-color" content="#0f0f0f"/>
+  <title>Chi è il Colpevole? 🔍</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔍</text></svg>"/>
+  <link rel="stylesheet" href="style.css"/>
+</head>
+<body>
+
+<!-- HOME -->
+<div id="s-home" class="screen active">
+  <div class="center-col justify-center">
+    <div class="hero-logo">🔍</div>
+    <h1 class="hero-title">Chi è il Colpevole?</h1>
+    <p class="hero-sub">Gioco di deduzione — mappa, armi, ruoli segreti, chat privata</p>
+    <div class="card">
+      <p class="label">Crea lobby</p>
+      <input type="text" id="host-name" placeholder="Il tuo nome" maxlength="20"/>
+      <input type="number" id="player-count" placeholder="Giocatori (3–10)" min="3" max="10" value="5"/>
+      <button class="btn-primary" onclick="createLobby()">Crea partita</button>
+    </div>
+    <div class="card">
+      <p class="label">Entra in lobby</p>
+      <input type="text" id="join-name" placeholder="Il tuo nome" maxlength="20"/>
+      <input type="text" id="lobby-code-input" placeholder="Codice (es. ROSSO4)" style="text-transform:uppercase" maxlength="12"/>
+      <button class="btn-secondary" onclick="joinLobby()">Entra</button>
+    </div>
+  </div>
+</div>
+
+<!-- LOBBY -->
+<div id="s-lobby" class="screen">
+  <div class="center-col">
+    <div style="text-align:center;margin:1rem 0 1.5rem">
+      <p class="label">Codice lobby</p>
+      <div id="lobby-code-display" class="big-code">—</div>
+      <p class="muted">Condividi con gli altri giocatori</p>
+    </div>
+    <p class="label">Giocatori (<span id="pcnt">0</span>/<span id="pmax">5</span>)</p>
+    <div id="players-list"></div>
+    <div id="host-actions" style="display:none;margin-top:1rem">
+      <button class="btn-primary" onclick="startGame()">Avvia partita 🚀</button>
+    </div>
+    <div id="guest-waiting" style="display:none;text-align:center;padding:1rem">
+      <p class="muted">In attesa che l'host avvii…</p>
+      <div class="spinner" style="margin:.75rem auto 0"></div>
+    </div>
+  </div>
+</div>
+
+<!-- LOADING -->
+<div id="s-loading" class="screen">
+  <div class="center-col justify-center" style="text-align:center">
+    <div style="font-size:56px;margin-bottom:.75rem">🕵️</div>
+    <h2>L'AI sta costruendo il caso…</h2>
+    <div class="spinner" style="margin:1.5rem auto"></div>
+    <p id="loading-msg" class="muted">Generando scenario, stanze e personaggi</p>
+    <div class="loading-steps">
+      <div class="ls" id="ls1">📍 Costruendo la location</div>
+      <div class="ls" id="ls2">👤 Creando i personaggi</div>
+      <div class="ls" id="ls3">🔪 Nascondendo l'arma</div>
+      <div class="ls" id="ls4">😈 Assegnando il colpevole</div>
+    </div>
+  </div>
+</div>
+
+<!-- SCHEDA PERSONAGGIO -->
+<div id="s-card" class="screen">
+  <div class="center-col">
+    <div class="step-dots"><span class="dot on"></span><span class="dot"></span><span class="dot"></span></div>
+
+    <div class="char-header">
+      <div class="av lg" id="card-av">?</div>
+      <div>
+        <h2 id="card-name" style="text-align:left;margin:0">—</h2>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px">
+          <span id="card-prof" class="pill pill-gray">—</span>
+          <span id="card-role-badge" class="pill">—</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="role-desc-box" id="card-role-desc">—</div>
+
+    <div class="card">
+      <div class="irow"><span class="iico">💀</span><div><div class="ilb">Rapporto con la vittima</div><div class="it" id="card-rapporto">—</div></div></div>
+      <div class="irow"><span class="iico">📍</span><div><div class="ilb">Stanza iniziale</div><div class="it" id="card-loc">—</div></div></div>
+      <div class="irow"><span class="iico">⏰</span><div><div class="ilb">Alibi</div><div class="it" id="card-alibi">—</div></div></div>
+      <div class="irow"><span class="iico">👁</span><div><div class="ilb">Cosa hai visto</div><div class="it" id="card-seen">—</div></div></div>
+      <div class="irow"><span class="iico">📎</span><div><div class="ilb">Oggetto in tuo possesso</div><div class="it" id="card-proof">—</div></div></div>
+      <div class="irow last"><span class="iico">🤫</span><div><div class="ilb">Segreto personale</div><div class="it" id="card-secret">—</div></div></div>
+    </div>
+
+    <div id="card-culp-box" class="culp-box" style="display:none">
+      <div class="culp-label">🔴 SEI IL COLPEVOLE</div>
+      <div class="it" id="card-culp-text">—</div>
+    </div>
+
+    <div id="ready-row" style="text-align:center;font-size:13px;color:var(--muted);margin:.5rem 0">
+      Pronti: <span id="ready-count">0</span>/<span id="ready-total">0</span>
+    </div>
+    <button class="btn-primary" onclick="playerReady()">Ho capito il mio ruolo →</button>
+  </div>
+</div>
+
+<!-- GIOCO -->
+<div id="s-game" class="screen" style="padding:0">
+  <div class="game-layout">
+
+    <!-- TOP BAR -->
+    <div class="top-bar">
+      <div class="top-bar-title" id="game-title">🔍 Caso in corso</div>
+      <div class="top-bar-tabs">
+        <button class="gtab active" onclick="switchTab('chat',this)">💬</button>
+        <button class="gtab" onclick="switchTab('mappa',this)">🗺️</button>
+        <button class="gtab" onclick="switchTab('scheda',this)">🪪</button>
+        <button class="gtab" onclick="switchTab('privata',this)" id="tab-priv-btn">✉️<span id="priv-badge" class="notif-badge" style="display:none"></span></button>
+        <button class="gtab" onclick="switchTab('note',this)">✏️</button>
+      </div>
+    </div>
+
+    <!-- CONTENT AREA -->
+    <div class="game-content">
+
+      <!-- TAB CHAT -->
+      <div id="gtab-chat" class="gtab-content">
+        <div class="chat-msgs" id="chat-msgs"></div>
+        <div class="chat-input-row">
+          <input type="text" id="chat-in" placeholder="Scrivi a tutti…" maxlength="200" onkeydown="if(event.key==='Enter')sendMessage()"/>
+          <button class="btn-send" onclick="sendMessage()">↑</button>
+        </div>
+        <button class="btn-vote" onclick="goToVote()">Pronti a votare →</button>
+      </div>
+
+      <!-- TAB MAPPA -->
+      <div id="gtab-mappa" class="gtab-content" style="display:none">
+        <div class="mappa-header">
+          <div>
+            <p class="label" style="margin:0">Vittima</p>
+            <div id="mappa-victim" class="muted" style="font-size:14px">—</div>
+          </div>
+          <div>
+            <p class="label" style="margin:0">Arma trovata</p>
+            <div id="mappa-arma" class="muted" style="font-size:14px">—</div>
+          </div>
+        </div>
+        <p class="label">Stanze — tocca per cercare indizi</p>
+        <div id="stanze-grid" class="stanze-grid"></div>
+        <div class="card" style="margin-top:1rem">
+          <p class="label" style="margin-top:0">Personaggi e posizioni</p>
+          <div id="chars-positions"></div>
+        </div>
+      </div>
+
+      <!-- TAB SCHEDA -->
+      <div id="gtab-scheda" class="gtab-content" style="display:none">
+        <div class="role-desc-box" id="d-role-desc">—</div>
+        <div class="card">
+          <div class="irow"><span class="iico">🧑</span><div><div class="ilb">Sei</div><div class="it" id="d-name">—</div></div></div>
+          <div class="irow"><span class="iico">💼</span><div><div class="ilb">Professione</div><div class="it" id="d-prof">—</div></div></div>
+          <div class="irow"><span class="iico">💀</span><div><div class="ilb">Rapporto vittima</div><div class="it" id="d-rapp">—</div></div></div>
+          <div class="irow"><span class="iico">📍</span><div><div class="ilb">Stanza iniziale</div><div class="it" id="d-loc">—</div></div></div>
+          <div class="irow"><span class="iico">⏰</span><div><div class="ilb">Alibi</div><div class="it" id="d-ali">—</div></div></div>
+          <div class="irow"><span class="iico">👁</span><div><div class="ilb">Cosa hai visto</div><div class="it" id="d-seen">—</div></div></div>
+          <div class="irow"><span class="iico">📎</span><div><div class="ilb">Oggetto</div><div class="it" id="d-proof">—</div></div></div>
+          <div class="irow last"><span class="iico">🤫</span><div><div class="ilb">Segreto personale</div><div class="it" id="d-secret">—</div></div></div>
+        </div>
+        <div id="d-culp-box" class="culp-box" style="display:none">
+          <div class="culp-label">🔴 SEI IL COLPEVOLE</div>
+          <div class="it" id="d-culp-text">—</div>
+        </div>
+      </div>
+
+      <!-- TAB CHAT PRIVATA -->
+      <div id="gtab-privata" class="gtab-content" style="display:none">
+        <p class="label">Scrivi in privato a un giocatore</p>
+        <div id="players-priv-list" style="margin-bottom:.75rem"></div>
+        <div id="priv-chat-area" style="display:none">
+          <div class="priv-chat-header">
+            <span id="priv-chat-with">—</span>
+            <button onclick="closePrivChat()" style="width:auto;padding:4px 10px;font-size:12px;margin:0">✕</button>
+          </div>
+          <div class="chat-msgs" id="priv-msgs" style="min-height:180px;max-height:220px"></div>
+          <div class="chat-input-row">
+            <input type="text" id="priv-in" placeholder="Messaggio privato…" maxlength="200" onkeydown="if(event.key==='Enter')sendPrivate()"/>
+            <button class="btn-send" onclick="sendPrivate()">↑</button>
+          </div>
+        </div>
+        <p class="muted" style="font-size:12px;margin-top:.75rem">I messaggi privati non sono visibili agli altri giocatori</p>
+      </div>
+
+      <!-- TAB NOTE -->
+      <div id="gtab-note" class="gtab-content" style="display:none">
+        <p class="label">I tuoi appunti (privati)</p>
+        <textarea id="notes" placeholder="Scrivi qui i tuoi sospetti, contraddizioni notate, indizi trovati…"></textarea>
+        <div class="note-template">
+          <p class="label" style="margin-top:.75rem">Template veloce</p>
+          <button class="btn-secondary" style="font-size:13px;padding:8px" onclick="addNoteTemplate()">+ Aggiungi schema indagine</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- VOTAZIONE -->
+<div id="s-vote" class="screen">
+  <div class="center-col">
+    <div class="step-dots"><span class="dot"></span><span class="dot"></span><span class="dot on"></span></div>
+    <h2>Chi è il colpevole?</h2>
+    <p class="muted" style="text-align:center;margin-bottom:1rem">Scegli con cura — una sola possibilità</p>
+    <div id="vote-options"></div>
+    <div style="text-align:center;font-size:13px;color:var(--muted);margin:.5rem 0">
+      Voti: <span id="vote-count">0</span>/<span id="vote-total">0</span>
+    </div>
+    <button class="btn-primary" id="vbtn" onclick="confirmVote()" disabled>Conferma accusa</button>
+    <button class="btn-secondary" onclick="show('s-game')">← Torna alla chat</button>
+  </div>
+</div>
+
+<!-- RISULTATO -->
+<div id="s-result" class="screen">
+  <div class="center-col" style="align-items:center">
+    <div id="res-emoji" style="font-size:56px;text-align:center;margin:1rem 0 .5rem">🎉</div>
+    <div id="res-title" class="res-title">—</div>
+    <p id="res-sub" class="muted" style="text-align:center;margin-bottom:1.25rem">—</p>
+
+    <div class="card" style="width:100%">
+      <p class="label" style="margin-top:0">Il colpevole era</p>
+      <div class="char-header" style="margin-bottom:.75rem">
+        <div class="av lg" style="background:#3d1a1a;color:#e8b4b4;border-color:#6b2d2d" id="res-av">?</div>
+        <div>
+          <div style="font-size:16px;font-weight:600" id="res-cname">—</div>
+          <span class="pill pill-red">Colpevole</span>
+        </div>
+      </div>
+      <div class="irow"><span class="iico">🎯</span><div><div class="ilb">Movente reale</div><div class="it" id="res-movente">—</div></div></div>
+      <div class="irow"><span class="iico">🔪</span><div><div class="ilb">Come ha fatto</div><div class="it" id="res-how">—</div></div></div>
+      <div class="irow last"><span class="iico">💥</span><div><div class="ilb">Colpo di scena</div><div class="it" id="res-twist">—</div></div></div>
+    </div>
+
+    <div class="card" style="width:100%">
+      <p class="label" style="margin-top:0">Risultati</p>
+      <div id="res-votes"></div>
+    </div>
+
+    <button class="btn-primary" onclick="resetGame()" style="margin-top:1rem">Nuova partita</button>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
